@@ -1,14 +1,7 @@
 pipeline {
   agent any
   stages {
-    stage('Top-Clone down') {
-      stage('Mid-Clone down') {
-        steps {
-            sh 'echo "clone down step!"'
-        }
-      }
-    }
-    
+   
     stage('Parallel Execution') {
       parallel {
 
