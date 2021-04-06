@@ -3,6 +3,11 @@ pipeline {
   stages {
     stage('Parallel Execution') {
       parallel {
+        stage('Clone down') {
+          steps {
+            sh 'echo "clone down step!"'
+          }
+        }
         stage('Say Hello') {
           steps {
             sh 'echo "Hello world!"'
