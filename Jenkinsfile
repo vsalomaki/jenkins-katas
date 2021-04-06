@@ -47,6 +47,7 @@ pipeline {
       }
     }
     stage('build and push docker') {
+      when { branch "master" }
       options {
         skipDefaultCheckout(true)
       }
@@ -56,7 +57,7 @@ pipeline {
       steps {
         unstash 'code'
         sh 'ci/build-docker.sh'
-        pushIfMaster() // This is a script inside a declarative pipeline
+        //pushIfMaster() // This is a script inside a declarative pipeline
       }
     }
     stage('component test') {
