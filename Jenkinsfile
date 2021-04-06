@@ -1,81 +1,75 @@
 pipeline {
   agent any
-  environment { 
-        docker_username = 'villesalomakiefi' //insert your own docker username here
-  }
+  
   stages {
-    stage('clone down') {
-      steps {
-        stash(excludes: '.git', name: 'code')
-        deleteDir()
+    stage('Clone down'){
+      agent {
+        label 'host'
+      }
+      steps{
+        stash excludes: '.git', name: 'code'
       }
     }
-
-    stage('Test and build') {
+    stage('Parallel execution') {
       parallel {
-        stage('test app') {
-          options {
-            skipDefaultCheckout(true)
-          }
-          agent {
-            docker {
-              image 'gradle:jdk11'
-            }
-          }
+        stage('Say Hello') {
           steps {
-            unstash 'code'
-            sh 'ci/unit-test-app.sh'
-            junit 'app/build/test-results/test/TEST-*.xml'
+            sh 'echo "hello world"'
           }
         }
+
         stage('build app') {
           options {
-            skipDefaultCheckout(true)
+            skipDefaultCheckout()
           }
           agent {
             docker {
               image 'gradle:jdk11'
             }
+
           }
           steps {
             unstash 'code'
             sh 'ci/build-app.sh'
             archiveArtifacts 'app/build/libs/'
-            stash(excludes: '.git', name: 'code')
           }
         }
+        stage('test app') {
+          options {
+            skipDefaultCheckout()
+          }
+          agent {
+            docker {
+              image 'gradle:jdk11'
+            }
+
+          }
+          steps {
+            unstash 'code'
+            sh 'ci/unit-test-app.sh'
+            
+            junit 'app/build/test-results/test/TEST-*.xml'
+          }
+        }
+
       }
+        
     }
-    stage('build and push docker') {
-      when { branch "buildmaster" }
+    stage('push app') {
       options {
-        skipDefaultCheckout(true)
+        skipDefaultCheckout()
       }
+      agent any
+
       environment {
-        DOCKERCREDS = credentials('docker_login')
+        DOCKERCREDS = credentials('docker_login') //use the credentials just created in this stage
       }
       steps {
-        unstash 'code'
-        sh 'ci/build-docker.sh'
-        //pushIfMaster() // This is a script inside a declarative pipeline
+            unstash 'code' //unstash the repository code
+            sh 'ci/build-docker.sh'
+            sh 'echo "$DOCKERCREDS_PSW" | docker login -u "$DOCKERCREDS_USR" --password-stdin' //login to docker hub with the credentials above
+            sh 'ci/push-docker.sh'
       }
     }
-    stage('component test') {
-      options {
-        skipDefaultCheckout(true)
-      }
-      steps {
-        unstash 'code'
-        sh 'ci/component-test.sh'
-      }
-    }
-
-  } 
-}
-void pushIfMaster() {
-    if (BRANCH_NAME=="master"){
-      sh 'echo "$DOCKERCREDS_PSW" | docker login -u "$DOCKERCREDS_USR" --password-stdin'
-      sh 'ci/push-docker.sh'
-    }
-
+  }
 }
