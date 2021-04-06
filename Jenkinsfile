@@ -47,7 +47,7 @@ pipeline {
       }
     }
     stage('build and push docker') {
-      when { branch "master" }
+      when { branch "buildmaster" }
       options {
         skipDefaultCheckout(true)
       }
