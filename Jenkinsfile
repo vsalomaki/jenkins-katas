@@ -60,6 +60,10 @@ pipeline {
       }
     }
     stage('component test') {
+      when { anyOf { 
+        changeRequest() 
+        branch "master"
+      } }
       options {
         skipDefaultCheckout(true)
       }
